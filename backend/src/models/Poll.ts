@@ -1,0 +1,21 @@
+import mongoose, { Schema, type Document} from 'mongoose';
+
+export interface IPoll extends Document{
+    question:string;
+    options: {id:string,text:string};
+    correctOptionId:string;
+    startTime:Date;
+    duration:number;
+    status : 'ACTIVE' | 'ENDED';
+}
+
+const PollSchema : Schema = new Schema({
+    question:{type: String, required:true},
+    options: {id: {type:String},text:{type:String}, required:true},
+    correctOptionId:{type:String, required:true},
+    startTime:{type:Date,default:Date.now()},
+    duration:{type:Number, required:true},
+    status : {type:String, enum:['ACTIVE' , 'ENDED'], default:'ACTIVE'}
+});
+
+export const Poll = mongoose.model<IPoll>('Poll', PollSchema);
