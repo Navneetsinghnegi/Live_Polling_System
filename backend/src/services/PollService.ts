@@ -1,8 +1,9 @@
 import { Poll } from "../models/Poll.js";
 import {v4 as uuidv4} from "uuid";
 import { Vote } from "../models/Vote.js";
+import { type IPoll } from "../models/Poll.js";
 
-class PollService{
+export class PollService{
    async createPoll (data:{question:string,options:string[], correctOption:string, duration:number}){
         const existingActivePoll = await Poll.findOne({status:'ACTIVE'});
 
@@ -22,7 +23,7 @@ class PollService{
             throw new Error("Answer doesnt match with any of the given options");
         }
 
-        const newPoll = await Poll.create({
+        const newPoll:IPoll = await Poll.create({
             question:data.question,
             options: formattedOptions,
             correctOptionId:answer.id,
@@ -35,7 +36,7 @@ class PollService{
     }
 
     async getActivePoll(){
-        const poll = await Poll.findOne({status:'ACTIVE'});
+        const poll = await Poll.findOne({status:'ACTIVE'}).lean() as IPoll|null;
         if(!poll) return null;
 
         const now = Date.now();
@@ -81,3 +82,6 @@ class PollService{
 
 
 }
+
+
+export const pollService = new PollService();

@@ -2,7 +2,7 @@ import mongoose, { Schema, type Document} from 'mongoose';
 
 export interface IPoll extends Document{
     question:string;
-    options: {id:string,text:string};
+    options: {id:string,text:string,votes:number}[];
     correctOptionId:string;
     startTime:Date;
     duration:number;
@@ -11,7 +11,7 @@ export interface IPoll extends Document{
 
 const PollSchema : Schema = new Schema({
     question:{type: String, required:true},
-    options: {id: {type:String},text:{type:String}, required:true},
+    options: {id: {type:String},text:{type:String},votes: { type: Number, default: 0 }, required:true},
     correctOptionId:{type:String, required:true},
     startTime:{type:Date,default:Date.now()},
     duration:{type:Number, required:true},
