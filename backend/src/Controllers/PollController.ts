@@ -49,7 +49,7 @@ class  PollController{
 
     submitVote = async (req:Request, res:Response)=>{
         try{
-            const {pollId,optionId,sessionId} = req.body();
+            const {pollId,optionId,sessionId} = req.body;
 
             if (!pollId || !optionId || !sessionId) {
                 return res.status(400).json({ 

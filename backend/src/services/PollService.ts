@@ -45,7 +45,7 @@ export class PollService{
         const remainingTime = poll.duration-elapsedSeconds;
 
         if(remainingTime<=0){
-            Poll.updateOne({_id:poll._id},{status:'ENDED'});
+            await Poll.updateOne({_id:poll._id},{status:'ENDED'});
             return{...poll, status:'ENDED', remainingTime:0};
         }
         const{correctOptionId, ...securePollData} = poll;
