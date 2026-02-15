@@ -2,6 +2,7 @@ import { Poll } from "../models/Poll.js";
 import {v4 as uuidv4} from "uuid";
 import { Vote } from "../models/Vote.js";
 import { type IPoll } from "../models/Poll.js";
+import { set } from "mongoose";
 
 export class PollService{
    async createPoll (data:{question:string,options:string[], correctOption:string, duration:number}){
@@ -32,6 +33,15 @@ export class PollService{
             status:'ACTIVE',
         });
 
+        setTimeout(async()=>{
+            await Poll.updateOne({_id:newPoll._id, status:'ACTIVE'}, {status:'ENDED'})
+
+            const{io} = await import('../index.js');
+            io.emit('pollEnded', {pollId:newPoll._id});
+
+            console.log(`Poll ${newPoll._id} auto-closed`);
+        }, data.duration *1000);
+
         return newPoll;
     }
 
@@ -54,7 +64,11 @@ export class PollService{
     }
 
     async submitVote(pollId:string,sessiondId:string,optionId:string){
-        this.getActivePoll();
+        const activePoll = await this.getActivePoll();
+
+        if(!activePoll || (typeof activePoll === 'object' && 'status' in activePoll && activePoll.status ==='ENDED')){
+            throw new Error("This poll has already ended");
+        }
 
         const existingVote = await Vote.findOne({
             pollId : pollId,
@@ -65,19 +79,42 @@ export class PollService{
             throw new Error("You have already voted in this poll!");
         }
 
-        const newVote = await Vote.create({
+        await Vote.create({
             pollId : pollId,
             studentId:sessiondId,
             optionId : optionId,
         })
 
-        await Poll.updateOne(
+        const updatedPoll = await Poll.findOneAndUpdate(
             {_id:pollId, "options.id":optionId},
-            {$inc:{"options.$.votes":1}}
+            {$inc:{"options.$.votes":1}},
+            {new : true}
         )
 
-        return newVote;
+        return updatedPoll;
         
+    }
+
+    async getPollResults(pollId:string){
+        const poll = await Poll.findById(pollId).lean() as IPoll | null;
+        if(!poll) throw new Error ("Poll not found");
+
+        const totalVotes = poll.options.reduce((sum,opt) => sum+opt.votes,0);
+        const winner = [...poll.options].sort((a, b) => b.votes - a.votes)[0];
+
+        const correctOption = poll.options.find(opt => opt.id === poll.correctOptionId);
+        const correctVotes = correctOption ? correctOption.votes : 0;
+        const accuracyRate = totalVotes > 0 ? (correctVotes / totalVotes) * 100 : 0;
+
+        return {
+            question: poll.question,
+            totalVotes,
+            accuracyRate: accuracyRate.toFixed(2) + "%",
+            winner: winner?.text,
+            options: poll.options, // Detailed breakdown
+            correctOptionId: poll.correctOptionId
+        };
+
     }
 
 
