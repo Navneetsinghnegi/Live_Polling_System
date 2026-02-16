@@ -71,7 +71,7 @@ class  PollController{
 
             if(updatedPoll){
                 io.emit('voteUpdate',{
-                    pollId: updatedPoll._id,
+                    pollId: updatedPoll.id,
                     options:updatedPoll.options
                 })
             }

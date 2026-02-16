@@ -2,7 +2,7 @@ import { Poll } from "../models/Poll.js";
 import {v4 as uuidv4} from "uuid";
 import { Vote } from "../models/Vote.js";
 import { type IPoll } from "../models/Poll.js";
-import { set } from "mongoose";
+import mongoose,{ set } from "mongoose";
 
 export class PollService{
    async createPoll (data:{question:string,options:string[], correctOption:string, duration:number}){
@@ -70,8 +70,10 @@ export class PollService{
             throw new Error("This poll has already ended");
         }
 
+        const pollObjectId = new mongoose.Types.ObjectId(pollId);
+
         const existingVote = await Vote.findOne({
-            pollId : pollId,
+            pollId : pollObjectId,
             studentId:sessiondId,
         })
 
@@ -80,16 +82,20 @@ export class PollService{
         }
 
         await Vote.create({
-            pollId : pollId,
+            pollId : pollObjectId,
             studentId:sessiondId,
             optionId : optionId,
         })
 
         const updatedPoll = await Poll.findOneAndUpdate(
-            {_id:pollId, "options.id":optionId},
+            {_id:pollObjectId, "options.id":optionId},
             {$inc:{"options.$.votes":1}},
             {new : true}
         )
+
+        if(!updatedPoll){
+            throw new Error("Poll or option not found");
+        }
 
         return updatedPoll;
         
@@ -100,7 +106,11 @@ export class PollService{
         if(!poll) throw new Error ("Poll not found");
 
         const totalVotes = poll.options.reduce((sum,opt) => sum+opt.votes,0);
-        const winner = [...poll.options].sort((a, b) => b.votes - a.votes)[0];
+        let winner = "Poll still in progress";
+        if (poll.status === 'ENDED') {
+            const topOption = [...poll.options].sort((a, b) => b.votes - a.votes)[0];
+            winner = topOption && topOption.votes > 0 ? topOption.text : "No votes cast";
+        }
 
         const correctOption = poll.options.find(opt => opt.id === poll.correctOptionId);
         const correctVotes = correctOption ? correctOption.votes : 0;
@@ -110,7 +120,7 @@ export class PollService{
             question: poll.question,
             totalVotes,
             accuracyRate: accuracyRate.toFixed(2) + "%",
-            winner: winner?.text,
+            winner,
             options: poll.options, // Detailed breakdown
             correctOptionId: poll.correctOptionId
         };
