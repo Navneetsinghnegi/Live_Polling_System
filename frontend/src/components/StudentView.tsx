@@ -1,13 +1,14 @@
-import React, { useEffect, useEffectEvent, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { socket } from '../socket';
-import {Timer, Send} from 'lucide-react';
+import {Timer, Send, CheckCircle2, XCircle} from 'lucide-react';
 
 const StudentView = () => {
     const [activePoll, setActivePoll] = useState<any>(null);
     const [selectedOption, setSelectedOption] = useState<string>('');
     const [hasVoted, sethasVoted] = useState<boolean>(false);
-    const [timeLeft, setTimeLeft] = useState<number| null>(null)
+    const [timeLeft, setTimeLeft] = useState<number| null>(null);
+    const [pollResults, setPollResults] = useState<any>(null);
     useEffect(()=>{
         const  fetchActivePoll = async ()=>{
             try{
@@ -33,15 +34,34 @@ const StudentView = () => {
         }
     },[]);
 
-    useEffect(() =>{
-        if(timeLeft === null || timeLeft<=0) return;
+    // 1. Dedicated Countdown Timer
+    useEffect(() => {
+      if (timeLeft === null || timeLeft <= 0) return;
 
-        const timer = setInterval(() =>{
-            setTimeLeft((prev) => (prev !== null && prev>0 ? prev-1 :0));
-        },1000)
+      const timer = setInterval(() => {
+        setTimeLeft((prev) => (prev !== null && prev > 0 ? prev - 1 : 0));
+      }, 1000);
 
-        return() => clearInterval(timer);
-    }, [timeLeft]);
+      return () => clearInterval(timer);
+    }, [timeLeft]); // Only re-runs when timeLeft changes
+
+    // 2. Dedicated Results Reveal (Triggered only ONCE at 0)
+    useEffect(() => {
+      if (timeLeft === 0 && activePoll && !pollResults) {
+        const fetchResults = async () => {
+          try {
+            const id = activePoll.id || activePoll._id;
+            const res = await axios.get(`http://localhost:5000/api/polls/results/${id}`);
+            if (res.data.success) {
+              setPollResults(res.data.data); // Stores accuracy and winner
+            }
+          } catch (err: any) {
+            console.error("Error fetching poll results", err);
+          }
+        };
+        fetchResults();
+      }
+    }, [timeLeft, activePoll, pollResults]);
 
     const handleVote = async()=>{
         if(!selectedOption || !activePoll) return;
@@ -110,6 +130,39 @@ const StudentView = () => {
             </button>
           ))}
         </div>
+
+        {/* Place this inside the render, after the options list */}
+        {pollResults && (
+          <div className="mt-8 animate-in fade-in zoom-in duration-500">
+            <div className={`p-6 rounded-2xl border-2 flex items-center gap-4 ${
+              selectedOption === pollResults.correctOptionId 
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+                : 'bg-red-50 border-red-200 text-red-800'
+            }`}>
+              <div className={`p-3 rounded-full ${
+                selectedOption === pollResults.correctOptionId ? 'bg-emerald-500' : 'bg-red-500'
+              } text-white`}>
+                {selectedOption === pollResults.correctOptionId ? <CheckCircle2 size={24} /> : <XCircle size={24} />}
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">
+                  {selectedOption === pollResults.correctOptionId ? "Correct Answer!" : "Better luck next time!"}
+                </h3>
+                <p className="text-sm opacity-90">
+                  The correct answer was: <span className="font-bold">{
+                    pollResults.options.find((o: any) => o.id === pollResults.correctOptionId)?.text
+                  }</span>
+                </p>
+              </div>
+            </div>
+            
+            {/* Optional: Show mini-bars so they see how others voted */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-xl">
+              <p className="text-xs font-bold text-gray-400 uppercase mb-3">Class Performance</p>
+              <p className="text-sm text-gray-600 italic">Total accuracy for this question: {pollResults.accuracyRate}</p>
+            </div>
+          </div>
+        )}
 
         {!hasVoted && (
           <button

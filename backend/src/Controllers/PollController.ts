@@ -23,7 +23,7 @@ class  PollController{
             })
 
             return res.status(201).json({
-                succes:true,
+                success:true,
                 data:newPoll
             })
         }catch(error:any){
