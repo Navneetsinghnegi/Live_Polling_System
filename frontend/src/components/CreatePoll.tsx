@@ -1,12 +1,14 @@
 import React, { useState } from 'react'
 import axios from 'axios'
 import { Plus, Trash2, Clock, CheckCircle2 } from 'lucide-react';
+import LiveResults from './LiveResults';
 
 const CreatePoll = () => {
     const [question, setQuestion] = useState<string>("");
     const [options, setOptions] = useState<string[]>([]);
     const [correctOptionIndex, setCorrectOptionIndex] = useState<number | null>(0);
     const [duration, setDuration] = useState<number>(60);
+    const [activePoll, setActivePoll] = useState<any>(null);
 
     const handleAddOptions = () => setOptions([...options,'']);
 
@@ -29,15 +31,25 @@ const CreatePoll = () => {
             const payload = {question,options,correctOption: options[correctOptionIndex],duration};
 
             const response = await axios.post('http://localhost:5000/api/polls/create', payload)
-            alert('Poll Started Successfully');
-            console.log('Poll Data', response.data.data);
-
+            if(response.data.success){
+                setActivePoll(response.data.data);
+                alert('Poll Started Successfully');
+            }
         }catch(error:any){
             alert(error.response?.data?.message || 'Failed to start the poll');
         }
 
 
     };
+
+    if(activePoll){
+        return (
+          <LiveResults 
+              pollData={activePoll} 
+              onPollEnd={() => setActivePoll(null)} // Allows the teacher to go back and create a new poll
+          />
+        );
+    }
   return (
     <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
       <div className="p-8">
