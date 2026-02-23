@@ -57,11 +57,7 @@ const CreatePoll = () => {
       <div className="p-8">
         <div className="p-8">
           {/* Header Tag */}
-          <div className="flex items-center gap-2 mb-6">
-            <span className="bg-indigo-600 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
-              <CheckCircle2 size={10} /> Intervue Poll
-            </span>
-          </div>
+          
 
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Let’s Get Started</h1>
           <p className="text-gray-500 mb-8">you’ll have the ability to create and manage polls, ask questions, and monitor your students' responses in real-time.</p>

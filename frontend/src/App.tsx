@@ -13,7 +13,7 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50">
       <nav className="p-4 bg-white border-b flex justify-between items-center">
-        <span className="font-bold text-xl text-indigo-600">Pulse Check</span>
+        <span className="font-bold text-xl text-indigo-600">Live Polling System</span>
         <button 
           onClick={() => setRole(null)}
           className="text-sm text-slate-500 hover:text-slate-800 font-medium"

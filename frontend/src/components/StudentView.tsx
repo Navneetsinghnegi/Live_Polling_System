@@ -25,8 +25,10 @@ const StudentView = () => {
 
         socket.on('pollStarted',(data)=>{
             setActivePoll(data);
+            setTimeLeft(data.duration);
             sethasVoted(false);
             setSelectedOption('');
+            setPollResults(null);
         })
 
         return()=>{
@@ -47,11 +49,12 @@ const StudentView = () => {
 
     // 2. Dedicated Results Reveal (Triggered only ONCE at 0)
     useEffect(() => {
-      if (timeLeft === 0 && activePoll && !pollResults) {
+      const pollId = activePoll?.id || activePoll?._id;
+      if (timeLeft === 0 && pollId && !pollResults) {
         const fetchResults = async () => {
           try {
-            const id = activePoll.id || activePoll._id;
-            const res = await axios.get(`http://localhost:5000/api/polls/results/${id}`);
+            
+            const res = await axios.get(`http://localhost:5000/api/polls/results/${pollId}`);
             if (res.data.success) {
               setPollResults(res.data.data); // Stores accuracy and winner
             }
@@ -67,7 +70,7 @@ const StudentView = () => {
         if(!selectedOption || !activePoll) return;
 
         try{
-            await axios.post('http://localhost:5000/api/polls/vote', {
+            await axios.post('http://localhost:5000/api/polls/submitVote', {
                 pollId : activePoll.id || activePoll._id,
                 optionId: selectedOption,
                 sessionId: "student_"+ Math.random().toString(36).substring(2,9),
@@ -112,7 +115,7 @@ const StudentView = () => {
         <h2 className="text-2xl font-bold text-gray-900 mb-6">{activePoll.question}</h2>
         
         <div className="space-y-4 mb-8">
-          {activePoll.options.map((option: any) => (
+          {activePoll?.options?.map((option: any) => (
             <button
               key={option.id}
               disabled={hasVoted}

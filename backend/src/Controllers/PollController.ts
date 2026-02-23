@@ -16,7 +16,7 @@ class  PollController{
             });
 
             io.emit('pollStarted',{
-                id:newPoll._id,
+                _id:newPoll._id,
                 question:newPoll.question,
                 options: newPoll.options.map(o => ({ id: o.id, text: o.text })),
                 duration: newPoll.duration
